@@ -6,7 +6,7 @@ provider "azurerm" {
 
 locals {
 
-myprefix = "playground"
+  myprefix = "playground"
 
 }
 
@@ -29,6 +29,13 @@ resource "azurerm_subnet" "playground-sub1" {
   address_prefixes     = ["10.0.2.0/24"]
 }
 
+resource "azurerm_public_ip" "playground-public-ip" {
+  name                = "${local.myprefix}-public-ip"
+  resource_group_name = azurerm_resource_group.playground-rg.name
+  location            = azurerm_resource_group.playground-rg.location
+  allocation_method   = "Dynamic"
+}
+
 resource "azurerm_network_interface" "playground-nic" {
   name                = "${local.myprefix}-nic"
   location            = azurerm_resource_group.playground-rg.location
@@ -38,7 +45,8 @@ resource "azurerm_network_interface" "playground-nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.playground-sub1.id
     private_ip_address_allocation = "Static"
-    private_ip_address = "10.0.2.5"
+    private_ip_address            = "10.0.2.5"
+    public_ip_address_id          = azurerm_public_ip.playground-public-ip.id
   }
 }
 
@@ -58,7 +66,7 @@ resource "azurerm_linux_virtual_machine" "playground-mysql" {
     username   = "adminuser"
     public_key = file("~/.ssh/id_rsa.pub")
   }
-  
+
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
@@ -75,6 +83,6 @@ resource "azurerm_linux_virtual_machine" "playground-mysql" {
 #Output to print VM install status
 
 output "playground-vm-output" {
- value = azurerm_linux_virtual_machine.playground-mysql
- sensitive = true
+  value = azurerm_linux_virtual_machine.playground-mysql.public_ip_address
+  #sensitive = true
 }
